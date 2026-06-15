@@ -13,17 +13,20 @@ class Navbar(tk.Frame):
 
     def _build(self) -> None:
         
-        fav_button = self._nav_image_button(self, conf.heart_icon_path, lambda: self.controller.show_frame("HomePage"))
+        left_frame = tk.Frame(self, bg=conf.BGTOPBARCOLOR)
+        left_frame.pack(side="left", padx="12")
+
+        fav_button = self._nav_image_button(left_frame, conf.heart_icon_path, lambda: self.controller.show_frame("HomePage"))
         fav_button.pack(side="left", padx=4, pady=10)
         
         brand = tk.Label(
-            self,
+            left_frame,
             text="Game Launcher",
             bg=conf.BGTOPBARCOLOR,
             fg=conf.FGCOLOR,
             font=("TkDefaultFont", 12, "bold"),
         )
-        brand.pack(side="left", padx=16)
+        brand.pack(side="left", padx=8)
 
         nav_buttons = tk.Frame(self, bg=conf.BGTOPBARCOLOR)
         nav_buttons.pack(side="right", padx=12)
