@@ -7,7 +7,13 @@ HOVERCOLOR = "#3A3B3C"
 FGCOLOR = "#E4E6EB"
 FGSECONDARYCOLOR = "#B0B3B8"
 
-DEFAULT_IMAGES_PATH = os.path.join(os.path.dirname(__file__), "../assets/default_images")
-heart_icon_path = os.path.join(DEFAULT_IMAGES_PATH, "fav.png")
-add_icon_path = os.path.join(DEFAULT_IMAGES_PATH, "add.png")
-sample_grid_image_path = os.path.join(DEFAULT_IMAGES_PATH, "sample_grid.jpg")
+PROYECT_DIR = os.path.dirname(os.path.dirname(__file__))
+
+DEFAULT_IMAGES_PATH = os.path.join(PROYECT_DIR, "assets", "default_images")
+
+GAME_IMAGES_PATH = os.path.join(PROYECT_DIR, "assets", "game_images")
+HEART_ICON_PATH = os.path.join(DEFAULT_IMAGES_PATH, "fav.png")
+ADD_ICON_PATH = os.path.join(DEFAULT_IMAGES_PATH, "add.png")
+SAMPLE_GRID_IMAGE_PATH = os.path.join(DEFAULT_IMAGES_PATH, "sample_grid.jpg")
+
+SAVEFILE_PATH = os.path.join(PROYECT_DIR, "data", "games.json")

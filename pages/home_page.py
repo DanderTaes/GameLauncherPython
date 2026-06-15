@@ -2,18 +2,36 @@ import tkinter as tk
 from PIL import Image, ImageTk
 
 from cfg import app_config as conf
+from pages.add_game_page import AddGamePage
 from pages.game import Game
+from utils.games_ddbb import GamesDDBB
+
 
 BASE_SEPARATION_CARDS = (4, 10)
 
 CARD_SIZE = (200, 300)
 
+class Games:
+    def __init__(self):
+        self.manager = GamesDDBB()
+
+    def add_game(self, game):
+        self.manager.add_game(game)
+
+    def remove_game(self, game):
+        self.manager.remove_game(game)
+
+    def get_games(self):
+        return self.manager.get_games()
+
 class HomePage(tk.Frame):
     def __init__(self, master, controller):
         super().__init__(master, bg=conf.BGCOLOR)
+
+        self.game_manager = Games()
+
         self.controller = controller
         self._images = []
-        self._games = []
         self._grid = None
         self._grid_window = None
         self._scrollable_canvas = None
@@ -72,13 +90,13 @@ class HomePage(tk.Frame):
         )
         subtitle.pack(anchor="w", pady=(2, 0))
         
-        add_image = Image.open(conf.add_icon_path).resize((32, 32), resample=Image.Resampling.NEAREST)
+        add_image = Image.open(conf.ADD_ICON_PATH).resize((32, 32), resample=Image.Resampling.NEAREST)
         add_image_tk = ImageTk.PhotoImage(add_image)
 
         add_game_button = tk.Button(
             toptainer,
             image=add_image_tk,
-            command="",
+            command=self.open_add_game_page,
             bg=conf.BGTOPBARCOLOR,
             activebackground=conf.FGSECONDARYCOLOR,
             relief="flat",
@@ -109,14 +127,7 @@ class HomePage(tk.Frame):
         self._scrollable_canvas.bind_all("<Button-4>", lambda e: self.on_mousewheel(self._scrollable_canvas, e))
         self._scrollable_canvas.bind_all("<Button-5>", lambda e: self.on_mousewheel(self._scrollable_canvas, e))
 
-        self._games = [
-            Game("Adventure Quest", "", conf.sample_grid_image_path),
-            Game("Space Runner", "", conf.sample_grid_image_path),
-            Game("Pixel Farm", "", conf.sample_grid_image_path),
-            Game("Boss Raid", "", conf.sample_grid_image_path),
-            Game("Sky Drift", "", conf.sample_grid_image_path),
-            Game("Night Forge", "", conf.sample_grid_image_path),
-        ]
+        self._games = self.game_manager.get_games()
 
         self._render_grid(3)
 
@@ -190,3 +201,10 @@ class HomePage(tk.Frame):
 
     def open_game(self, game):
         print(f"Opening {game.name} from {game.path}...")
+
+    def open_add_game_page(self):
+        AddGamePage(self.winfo_toplevel(), on_save=self.add_game)
+
+    def add_game(self, game):
+        self.game_manager.add_game(game)
+        self._render_grid(self._current_columns or 3)

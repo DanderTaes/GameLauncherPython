@@ -16,7 +16,7 @@ class Navbar(tk.Frame):
         left_frame = tk.Frame(self, bg=conf.BGTOPBARCOLOR)
         left_frame.pack(side="left", padx="12")
 
-        fav_button = self._nav_image_button(left_frame, conf.heart_icon_path, lambda: self.controller.show_frame("HomePage"))
+        fav_button = self._nav_image_button(left_frame, conf.HEART_ICON_PATH, lambda: self.controller.show_frame("HomePage"))
         fav_button.pack(side="left", padx=4, pady=10)
         
         brand = tk.Label(
