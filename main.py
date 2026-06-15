@@ -4,6 +4,13 @@ from cfg import app_config as conf
 from pages import home_page as hp, navbar as nb
 
 
+# TODO: add right click to images to remove/notes/favorites
+# TODO: add overlay to images with game name on hover and heart always
+# TODO: add search bar to filter games by name
+# TODO: add game tags/groups
+# TODO: steam game launch from steam id (steam://rungameid/APPID)
+# TODO: steamgriddb API?
+
 class GameLauncherApp:
     def __init__(self) -> None:
         self.root = tk.Tk()
