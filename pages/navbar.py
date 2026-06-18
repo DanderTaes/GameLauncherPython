@@ -2,7 +2,7 @@ import tkinter as tk
 
 from cfg import app_config as conf
 from PIL import Image, ImageTk
-
+from pages import settings_page as sp
 
 class Navbar(tk.Frame):
     def __init__(self, master, controller):
@@ -10,6 +10,10 @@ class Navbar(tk.Frame):
         self.controller = controller
         self.pack_propagate(False)
         self._build()
+    
+        
+    def _open_settings(self):
+        sp.SettingsPage(self.winfo_toplevel()).tkraise()
 
     def _build(self) -> None:
         
@@ -31,8 +35,8 @@ class Navbar(tk.Frame):
         nav_buttons = tk.Frame(self, bg=conf.BGTOPBARCOLOR)
         nav_buttons.pack(side="right", padx=12)
 
-        home_button = self._nav_button(nav_buttons, "Home", lambda: self.controller.show_frame("HomePage"))
-        home_button.pack(side="left", padx=4, pady=10)
+        settings_button = self._nav_button(nav_buttons, "Settings", lambda: self._open_settings())
+        settings_button.pack(side="left", padx=4, pady=10)
 
         quit_button = self._nav_button(nav_buttons, "Quit", self.controller.quit)
         quit_button.pack(side="left", padx=4, pady=10)
@@ -70,3 +74,4 @@ class Navbar(tk.Frame):
         )
         setattr(button, "_image", image_tk)  # Keep a reference to avoid garbage collection
         return button
+
