@@ -10,30 +10,43 @@ from pages.game import Game
 POPUP_SIZE = (200, 300)
 
 
-class AddGamePage(tk.Toplevel):
-    def __init__(self, parent, on_save=None):
+class GamePage(tk.Toplevel):
+    def __init__(self, parent, on_save=None, game=None):
         super().__init__(parent)
         self.on_save = on_save
         self._preview_image = None
         self._selected_image_path = conf.SAMPLE_GRID_IMAGE_PATH
         self._selected_game_path = ""
 
-        self.title("Add Game")
+        self.game = game
+        self.existing_game = game is not None
+
+        self.title("Edit Game" if self.existing_game else "Add Game")
+
         self.configure(bg=conf.BGCOLOR)
         self.resizable(False, False)
         self.transient(parent)
         self.grab_set()
-
         self._build_ui()
+
+        if self.existing_game:
+            assert self.game is not None
+            self.name_var.set(self.game.name)
+            self._selected_image_path = self.game.image_path
+            self._selected_game_path = self.game.path
+            self.path_display.configure(text=self._selected_game_path)
+            self._refresh_preview()
+
         self._center_window()
 
     def _build_ui(self):
+        """ Builds the UI for the game page, including the form for adding/editing a game."""
         container = tk.Frame(self, bg=conf.BGCOLOR, padx=20, pady=20)
         container.pack(fill="both", expand=True)
 
         header = tk.Label(
             container,
-            text="Add a New Game",
+            text="Add a New Game" if not self.existing_game else "Edit Game",
             bg=conf.BGCOLOR,
             fg=conf.FGCOLOR,
             font=("TkDefaultFont", 14, "bold"),
@@ -200,7 +213,8 @@ class AddGamePage(tk.Toplevel):
             os.makedirs(conf.GAME_IMAGES_PATH, exist_ok=True)
 
         dest_path = os.path.join(conf.GAME_IMAGES_PATH, os.path.basename(source_path))
-        shutil.copy(source_path, dest_path)
+        if os.path.abspath(source_path) != os.path.abspath(dest_path):
+            shutil.copy(source_path, dest_path)
         return dest_path
 
     def _save(self):
@@ -218,6 +232,6 @@ class AddGamePage(tk.Toplevel):
         game = Game(name, self._selected_game_path, self._selected_image_path, game_type)
 
         if self.on_save:
-            self.on_save(game)
+            self.on_save(game, self.game)
 
         self.destroy()

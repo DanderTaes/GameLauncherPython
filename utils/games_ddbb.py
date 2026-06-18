@@ -32,5 +32,10 @@ class GamesDDBB:
         self.games.remove(game)
         self.save_games_to_file(conf.SAVEFILE_PATH)
 
+    def modify_game(self, old_game, new_game):
+        index = self.games.index(old_game)
+        self.games[index] = new_game
+        self.save_games_to_file(conf.SAVEFILE_PATH)
+        
     def get_games(self):
         return self.games

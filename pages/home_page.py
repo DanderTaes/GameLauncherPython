@@ -1,8 +1,8 @@
 import tkinter as tk
-from PIL import Image, ImageTk
+from PIL import Image, ImageDraw, ImageFont, ImageTk, ImageEnhance
 
 from cfg import app_config as conf
-from pages.add_game_page import AddGamePage
+from pages.game_page import GamePage
 from pages.game import Game
 from utils.games_ddbb import GamesDDBB
 
@@ -20,6 +20,9 @@ class Games:
 
     def remove_game(self, game):
         self.manager.remove_game(game)
+
+    def modify_game(self, old_game, new_game):
+        self.manager.modify_game(old_game, new_game)
 
     def get_games(self):
         return self.manager.get_games()
@@ -170,15 +173,36 @@ class HomePage(tk.Frame):
         card.pack_propagate(False)
         card.grid_propagate(False)
 
-        image_button = self._make_image_button(card, game.image_path, lambda: self.open_game(game))
+        image_button = self._make_image_button(card, game.image_path, lambda: self.open_game(game), game.name)
         image_button.pack(fill="both", expand=True)
+
+        menu = tk.Menu(
+            card,
+            tearoff=0,
+            bg=conf.BGTOPBARCOLOR,
+            fg=conf.FGCOLOR,
+            activebackground=conf.HOVERCOLOR,
+            activeforeground=conf.FGCOLOR,
+        )
+        menu.add_command(label="Open", command=lambda: self.open_game(game))
+        menu.add_command(label="Edit", command=lambda: self.open_edit_game_page(game))
+        menu.add_command(label="Remove", command=lambda: self.remove_game(game))
+
+        def show_menu(event):
+            try:
+                menu.tk_popup(event.x_root, event.y_root)
+            finally:
+                menu.grab_release()
+
+        for widget in (card, image_button):
+            widget.bind("<Button-3>", show_menu)
 
         return card
 
-    def _make_image_button(self, master, image_path, command):
+    def _make_image_button(self, master, image_path, command, title):
         image = Image.open(image_path).resize(CARD_SIZE, resample=Image.Resampling.LANCZOS)
         image_tk = ImageTk.PhotoImage(image)
-        self._images.append(image_tk)
+        hover_image_tk = self._build_hover_image(image, title)
 
         button = tk.Button(
             master,
@@ -191,7 +215,63 @@ class HomePage(tk.Frame):
             highlightthickness=0,
             cursor="hand2",
         )
+
+        image_state = {"normal": image_tk, "hover": hover_image_tk}
+
+        def show_hover(_event, widget=button):
+            widget.configure(image=image_state["hover"])
+
+        def show_normal(_event, widget=button):
+            widget.configure(image=image_state["normal"])
+
+        button.bind("<Enter>", show_hover)
+        button.bind("<Leave>", show_normal)
+
         return button
+
+    def _build_hover_image(self, image, title):
+        hover_base = ImageEnhance.Brightness(image).enhance(0.45).convert("RGBA")
+        overlay = Image.new("RGBA", CARD_SIZE, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(overlay)
+        font = ImageFont.load_default(25)
+
+        text = title.strip() or "Game"
+        max_chars = 18
+        words = text.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            candidate = word if not current_line else f"{current_line} {word}"
+            if len(candidate) <= max_chars:
+                current_line = candidate
+            else:
+                if current_line:
+                    lines.append(current_line)
+                current_line = word
+
+        if current_line:
+            lines.append(current_line)
+
+        wrapped_text = "\n".join(lines[:3])
+        bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=font, spacing=4, align="center")
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        text_x = (CARD_SIZE[0] - text_width) // 2
+        text_y = (CARD_SIZE[1] - text_height) // 2
+
+        draw.multiline_text(
+            (text_x, text_y),
+            wrapped_text,
+            font=font,
+            fill=(255, 255, 255, 255),
+            spacing=4,
+            align="center",
+            stroke_width=2,
+            stroke_fill=(0, 0, 0, 255),
+        )
+
+        return ImageTk.PhotoImage(Image.alpha_composite(hover_base, overlay).convert("RGB"))
 
     def start_game(self):
         print("Game started!")
@@ -203,8 +283,20 @@ class HomePage(tk.Frame):
         print(f"Opening {game.name} from {game.path}...")
 
     def open_add_game_page(self):
-        AddGamePage(self.winfo_toplevel(), on_save=self.add_game)
+        GamePage(self.winfo_toplevel(), on_save=self.add_game)
 
-    def add_game(self, game):
-        self.game_manager.add_game(game)
-        self._render_grid(self._current_columns or 3)
+    def open_edit_game_page(self, game):
+        GamePage(self.winfo_toplevel(), on_save=self.add_game, game=game)
+
+    def remove_game(self, game):
+        self.game_manager.remove_game(game)
+        self._games = self.game_manager.get_games()
+        self._render_grid(self._current_columns)
+
+    def add_game(self, game, old_game=None):
+        if old_game:
+            self.game_manager.modify_game(old_game, game)
+        else:
+            self.game_manager.add_game(game)
+        self._games = self.game_manager.get_games()
+        self._render_grid(self._current_columns)
