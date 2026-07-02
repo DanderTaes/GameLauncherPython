@@ -17,7 +17,7 @@ class Game:
         }
 
     @classmethod
-    def from_json(cls, data):
+    def from_dict(cls, data):
         return cls(
             name=data.get("name", ""),
             path=data.get("path", ""),

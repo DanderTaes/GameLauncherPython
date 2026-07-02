@@ -14,18 +14,25 @@ CARD_SIZE = (200, 300)
 class Games:
     def __init__(self):
         self.manager = GamesDDBB()
+        self.games = self.get_games()
 
     def add_game(self, game):
-        self.manager.add_game(game)
+        self.manager.add_item(game.to_json())
+        self.games = self.get_games()
 
     def remove_game(self, game):
-        self.manager.remove_game(game)
+        self.manager.remove_item(game.to_json())
+        self.games = self.get_games()
 
     def modify_game(self, old_game, new_game):
-        self.manager.modify_game(old_game, new_game)
+        self.manager.modify_item(old_game.to_json(), new_game.to_json())
+        self.games = self.get_games()
 
     def get_games(self):
-        return self.manager.get_games()
+        try:
+            return [Game.from_dict(game_data) for game_data in self.manager.get_items()]
+        except Exception as e:
+            raise RuntimeError(f"Failed to load games from database: {e}")
 
 class HomePage(tk.Frame):
     def __init__(self, master, controller):
@@ -43,6 +50,8 @@ class HomePage(tk.Frame):
         self._column_breakpoint = CARD_SIZE[0] + BASE_SEPARATION_CARDS[0] * 2
         self.create_widgets()
 
+    ## Grid layout and resizing
+    
     @staticmethod
     def update_scrollregion(canvas, _event=None):
             canvas.configure(scrollregion=canvas.bbox("all"))
@@ -60,10 +69,21 @@ class HomePage(tk.Frame):
     def match_canvas_width(self, canvas, event):
         if self._grid_window is not None:
             canvas.itemconfigure(self._grid_window, width=event.width)
-        columns = max(1, event.width // self._column_breakpoint)
-        if self._games and self._grid is not None and (columns != self._current_columns or event.width != self._layout_width or not self._grid.winfo_children()):
+        columns = self._get_columns_for_width(event.width)
+        if self.game_manager.games and self._grid is not None and (columns != self._current_columns or event.width != self._layout_width or not self._grid.winfo_children()):
             self._render_grid(columns)
 
+    def _get_columns_for_width(self, width):
+        return max(1, width // self._column_breakpoint)
+
+    def _refresh_grid_layout(self):
+        if self._scrollable_canvas is not None:
+            self._scrollable_canvas.update_idletasks()
+            width = self._scrollable_canvas.winfo_width()
+        else:
+            width = self.winfo_width()
+
+        self._render_grid(self._get_columns_for_width(width))
 
 
     def create_widgets(self):
@@ -130,15 +150,13 @@ class HomePage(tk.Frame):
         self._scrollable_canvas.bind_all("<Button-4>", lambda e: self.on_mousewheel(self._scrollable_canvas, e))
         self._scrollable_canvas.bind_all("<Button-5>", lambda e: self.on_mousewheel(self._scrollable_canvas, e))
 
-        self._games = self.game_manager.get_games()
-
-        self._render_grid(3)
+        self._refresh_grid_layout()
 
     def _render_grid(self, columns):
         if not self._grid:
             return
 
-        columns = max(1, min(columns, len(self._games)))
+        columns = max(1, columns)
 
         self._current_columns = columns
         base_padx = BASE_SEPARATION_CARDS[0]
@@ -154,7 +172,7 @@ class HomePage(tk.Frame):
         for child in self._grid.winfo_children():
             child.destroy()
 
-        for index, game in enumerate(self._games):
+        for index, game in enumerate(self.game_manager.games):
             row = index // columns
             column = index % columns
             card = self._build_game_card(self._grid, game)
@@ -198,6 +216,8 @@ class HomePage(tk.Frame):
             widget.bind("<Button-3>", show_menu)
 
         return card
+
+    ## Image handling
 
     def _make_image_button(self, master, image_path, command, title):
         image = Image.open(image_path).resize(CARD_SIZE, resample=Image.Resampling.LANCZOS)
@@ -273,6 +293,8 @@ class HomePage(tk.Frame):
 
         return ImageTk.PhotoImage(Image.alpha_composite(hover_base, overlay).convert("RGB"))
 
+    ## Game actions
+
     def start_game(self):
         print("Game started!")
 
@@ -290,13 +312,13 @@ class HomePage(tk.Frame):
 
     def remove_game(self, game):
         self.game_manager.remove_game(game)
-        self._games = self.game_manager.get_games()
-        self._render_grid(self._current_columns)
+        self.game_manager.games = self.game_manager.get_games()
+        self._refresh_grid_layout()
 
     def add_game(self, game, old_game=None):
         if old_game:
             self.game_manager.modify_game(old_game, game)
         else:
             self.game_manager.add_game(game)
-        self._games = self.game_manager.get_games()
-        self._render_grid(self._current_columns)
+        self.game_manager.games = self.game_manager.get_games()
+        self._refresh_grid_layout()
